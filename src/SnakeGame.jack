@@ -1,0 +1,170 @@
+class SnakeGame {
+    field Snake snake;
+    field SnakeBoard board;
+    field int score;
+    field int cycle;
+    field int speed;
+    field int highscore;
+    field int specialFoodTimer; 
+
+    constructor SnakeGame new() {
+        do Screen.clearScreen();
+        let score = 0;
+        let cycle = 0;
+        let speed = 100;
+        let specialFoodTimer = 0;
+        
+        let board = SnakeBoard.new(this, 512, 264);
+        
+        // Initialize snake
+        let snake = Snake.new(this, board.sizeX()/2, board.sizeY()/2, 15, 3);
+        
+        do board.placeFood();
+        do board.placeObstacle();
+        do board.placeSpecialFood();
+        do board.drawSpecialFood();
+        
+        do board.drawStatus();
+        do board.drawBorder();
+        
+        return this;
+    }
+
+    method void dispose() {
+        do snake.dispose();
+        do board.dispose();
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    method void drawScore() {
+        do Output.moveCursor(0, 50);
+        do Output.printString("High Score: ");
+        do Output.printInt(highscore);
+        return;
+    }
+
+    method void IncSpeed() {
+        if (speed > 10) {
+            let speed = speed - 5;
+        }
+        return;
+    }
+
+    method void run() {
+        var boolean exit;
+        var int key;
+        
+        let exit = false;
+        
+        while (~exit) {
+            do snake.rememberDir();
+            do board.drawStatus();
+            do drawScore();
+            
+            // Special Food Timer Logic
+            let specialFoodTimer = specialFoodTimer + 1;
+            if (specialFoodTimer > 150) {
+                do board.removeSpecialFood();
+                do board.placeSpecialFood();
+                do board.drawSpecialFood();
+                let specialFoodTimer = 0;
+            }
+
+            let key = Keyboard.keyPressed();
+            
+            // --- FIXED DIRECTION LOGIC ---
+            // 1=Up, 2=Down, 3=Left, 4=Right
+            
+            // Left (130): Allow if NOT going Right (4)
+            if (key = 130) { 
+                if (~(snake.getLastDir() = 4)) { do snake.setDir(3); } 
+            } 
+            
+            // Up (131): Allow if NOT going Down (2)
+            if (key = 131) { 
+                if (~(snake.getLastDir() = 2)) { do snake.setDir(1); } 
+            } 
+            
+            // Right (132): Allow if NOT going Left (3)
+            if (key = 132) { 
+                if (~(snake.getLastDir() = 3)) { do snake.setDir(4); } 
+            } 
+            
+            // Down (133): Allow if NOT going Up (1)
+            if (key = 133) { 
+                if (~(snake.getLastDir() = 1)) { do snake.setDir(2); } 
+            }
+            
+            // Move Snake
+            if (~snake.tryMove()) {
+                do board.drawCrashed();
+                return;
+            }
+
+            // --- COLLISION CHECKS ---
+
+            // 1. Normal Food
+            if (board.checkFood(snake.posX(), snake.posY())) {
+                do snake.eatFood();
+                do nextLevel(1);
+                do board.placeFood();
+            }
+
+            // 2. Special Food
+            if (board.checkSpecialFood(snake.posX(), snake.posY())) {
+                do snake.eatFood();
+                do board.removeSpecialFood();
+                do nextLevel(5);
+                do board.placeSpecialFood();
+                do board.drawSpecialFood();
+                let specialFoodTimer = 0;
+            }
+
+            // 3. Obstacle
+            if (board.checkObstacle(snake.posX(), snake.posY())) {
+                do snake.eatObstacle();
+                do board.removeObstacle();
+                do nextLevel(-1);
+                do board.placeObstacle(); 
+            }
+
+            do snake.grow();
+            do board.drawFood();
+            do board.drawObstacle();
+            do board.drawSpecialFood();
+
+            if (score > highscore) {
+                let highscore = score;
+            }
+
+            do board.drawStatus();
+            do Sys.wait(speed);
+            do nextCycle();
+            
+            if (snake.checkRewriteHistory()) {
+               let cycle = snake.getLength(); 
+            }
+        }
+        return;
+    }
+
+    method void nextLevel(int points) {
+        let score = score + points;
+        if (points > 0) {
+             do IncSpeed();
+        }
+        return;
+    }
+
+    method int nextCycle() {
+        let cycle = cycle + 1;
+        return cycle;
+    }
+
+    method SnakeBoard getBoard() { return board; }
+    method Snake getSnake() { return snake; }
+    method int getCycle() { return cycle; }
+    method int getScore() { return score; }
+    method int getHscore() { return highscore; }
+}

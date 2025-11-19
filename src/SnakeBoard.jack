@@ -1,0 +1,274 @@
+class SnakeBoard {
+    field SnakeGame game;
+    field int sizeX, sizeY;
+    field int foodX, foodY;
+    field int specialX, specialY;
+    field Array grid; 
+    field int obsX, obsY;
+
+    constructor SnakeBoard new(SnakeGame Agame, int screenW, int screenH) {
+        let game = Agame;
+        let sizeX = screenW / 4;
+        let sizeY = (screenH - 16) / 4;
+        
+        do initBoard();
+        return this;
+    }
+
+    method void dispose() {
+        var int i;
+        var Array row;
+        let i = 0;
+        while (i < sizeX) {
+            let row = grid[i];
+            do row.dispose();
+            let i = i + 1;
+        }
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    method void initBoard() {
+        var int i, j;
+        var Array row;
+        let grid = Array.new(sizeX);
+        let i = 0;
+        
+        while (i < sizeX) {
+            let row = Array.new(sizeY);
+            let j = 0;
+            while (j < sizeY) {
+                let row[j] = 0; // 0 = empty
+                let j = j + 1;
+            }
+            let grid[i] = row;
+            let i = i + 1;
+        }
+        return;
+    }
+
+    method void placeFood() {
+        var boolean done;
+        let done = false;
+        while (~done) {
+            let foodX = Random.randRange(sizeX - 1);
+            let foodY = Random.randRange(sizeY - 4);
+            if (~checkOccupied(foodX, foodY)) { let done = true; }
+        }
+        return;
+    }
+    
+    method void placeSpecialFood() {
+        var boolean done;
+        var int attempts;
+        let done = false;
+        let attempts = 0;
+
+        while (~done) {
+            let specialX = Random.randRange(sizeX - 1);
+            let specialY = Random.randRange(sizeY - 4);
+            
+            if (~checkOccupied(specialX, specialY)) {
+                let done = true;
+            }
+            
+            let attempts = attempts + 1;
+            if (attempts > 10) { let done = true; } 
+        }
+        return;
+    }
+
+    method void placeObstacle() {
+        var boolean done;
+        var int attempts;
+        let done = false;
+        let attempts = 0;
+
+        while (~done) {
+            let obsX = Random.randRange(sizeX - 1);
+            let obsY = Random.randRange(sizeY - 4);
+            
+            if (~checkOccupied(obsX, obsY)) {
+                if (~(obsX = foodX) & ~(obsY = foodY)) {
+                     let done = true;
+                }
+            }
+            
+            let attempts = attempts + 1;
+            if (attempts > 20) { let done = true; }
+        }
+        return;
+    }
+
+    method void drawFood() {
+        var int x, y;
+        let x = foodX * 4;
+        let y = foodY * 4;
+        do Screen.setColor(true);
+        do Screen.drawCircle(x + 2, y + 2, 2);
+        return;
+    }
+    
+    method void drawSpecialFood() {
+        var int x, y;
+        let x = specialX * 4;
+        let y = specialY * 4;
+        do Screen.setColor(true);
+        do Screen.drawCircle(x + 2, y + 2, 5);
+        return;
+    }
+    
+    method void removeSpecialFood() {
+        var int x, y;
+        let x = specialX * 4;
+        let y = specialY * 4;
+        do Screen.setColor(false);
+        do Screen.drawCircle(x + 2, y + 2, 5);
+        return;
+    }
+
+    method void drawObstacle() {
+        var int x, y;
+        let x = obsX * 4;
+        let y = obsY * 4;
+        do Screen.setColor(true);
+        do Screen.drawRectangle(x, y, x + 4, y + 4);
+        return;
+    }
+
+    method void removeObstacle() {
+        var int x, y;
+        let x = obsX * 4;
+        let y = obsY * 4;
+        do Screen.setColor(false);
+        do Screen.drawRectangle(x, y, x + 4, y + 4);
+        return;
+    }
+
+    method void setOccupied(int x, int y, boolean occupied) {
+        var Array row;
+        let row = grid[x];
+        let row[y] = occupied;
+        return;
+    }
+
+    method boolean checkOccupied(int x, int y) {
+        var Array row;
+        let row = grid[x];
+        if (row[y]) { return true; }
+        return false;
+    }
+
+    method boolean checkFood(int x, int y) {
+        if (x = foodX) { if (y = foodY) { return true; } }
+        return false;
+    }
+    
+    method boolean checkSpecialFood(int x, int y) {
+        if (x = specialX) { if (y = specialY) { return true; } }
+        return false;
+    }
+
+    method boolean checkObstacle(int x, int y) {
+        if (x = obsX) { if (y = obsY) { return true; } }
+        return false;
+    }
+
+    method void drawSnakeHeadBit(int x, int y) {
+        var int x1, y1, x2, y2;
+        let x1 = x * 4;
+        let y1 = y * 4;
+        let x2 = x1 + 1;
+        let y2 = y1 + 4;
+        
+        do Screen.setColor(true);
+        do Screen.drawRectangle(x1, y1, x2, y2); 
+        do setOccupied(x, y, true);
+        return;
+    }
+
+    method void drawSnakeBit(int x, int y) {
+        var int x1, y1, x2, y2;
+        var int dx1, dy1, dx2, dy2;
+        
+        let x1 = x * 4;
+        let y1 = y * 4;
+        let x2 = x1 + 4;
+        let y2 = y1 + 4;
+        
+        do Screen.setColor(true);
+        do Screen.drawRectangle(x1, y1, x2, y2); 
+        
+        let dx1 = x1 + 1;
+        let dy1 = y1 + 1;
+        let dx2 = x2 - 1;
+        let dy2 = y2 - 1;
+        
+        do Screen.setColor(false);
+        do Screen.drawRectangle(dx1, dy1, dx2, dy2);
+        do setOccupied(x, y, true);
+        return;
+    }
+
+    method void clearSnakeBit(int x, int y) {
+        var int x1, y1, x2, y2;
+        let x1 = x * 4;
+        let y1 = y * 4;
+        let x2 = x1 + 4;
+        let y2 = y1 + 4;
+        
+        do Screen.setColor(false);
+        do Screen.drawRectangle(x1, y1, x2, y2);
+        do setOccupied(x, y, false);
+        return;
+    }
+
+    method boolean isOutOfBounds(int x, int y) {
+        if (x < 0) { return true; }
+        if (x > (sizeX - 1)) { return true; }
+        if (y < 0) { return true; }
+        if (y > (sizeY - 1)) { return true; }
+        return false;
+    }
+
+    method void drawBorder() {
+        do Screen.setColor(true);
+        do Screen.drawRectangle(0,0, 511, 3);
+        do Screen.drawRectangle(0, 252, 511, 255);
+        do Screen.drawRectangle(0, 0, 3, 255);
+        do Screen.drawRectangle(508, 0, 511, 255);
+        return;
+    }
+
+    method void drawStatus() {
+        var String s;
+        do Output.moveCursor(0, 5);
+        let s = "Score: ";
+        do Output.printString(s);
+        do s.dispose();
+        do Output.printInt(game.getScore());
+        
+        // *** FIX: Print spaces to clear any leftover digits from previous numbers ***
+        let s = "  "; 
+        do Output.printString(s);
+        do s.dispose();
+        
+        return;
+    }
+
+    method void drawCrashed() {
+        var String s;
+        do Output.moveCursor(20, 0);
+        if (game.getScore() > game.getHscore()) {
+             let s = "NEW HIGH SCORE!";
+        } else {
+             let s = "Oops you crashed!";
+        }
+        do Output.printString(s);
+        do s.dispose();
+        return;
+    }
+
+    method int sizeX() { return sizeX; }
+    method int sizeY() { return sizeY; }
+}

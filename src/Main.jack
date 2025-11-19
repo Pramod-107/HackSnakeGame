@@ -1,0 +1,58 @@
+class Main {
+    function void main() {
+        var SnakeGame game;
+        var int score;
+        var char key;
+        var boolean exit;
+        var boolean gameStarted;
+        var boolean restart;
+
+        let exit = false;
+        let restart = false;
+        let gameStarted = false;
+        let score = 0;
+
+        do Output.printString("Press Enter to start..");
+
+        while (~gameStarted) {
+            let key = Keyboard.keyPressed();
+            if (key = 128) { // Enter key
+                let gameStarted = true;
+            }
+        }
+
+        let game = SnakeGame.new();
+        do game.run();
+        do Screen.clearScreen();
+        
+        do Output.moveCursor(0,0);
+        do Output.printString("Press 1 to exit..");
+        do Output.moveCursor(4,0);
+        do Output.printString("Press 2 to Restart..");
+
+        while (~exit) {
+            let key = Keyboard.keyPressed();
+            if (key = 49) { // Key 1
+                let exit = true;
+            }
+            if (key = 50) { // Key 2
+                do Screen.clearScreen();
+                let restart = true;
+                do game.dispose();
+                do Screen.clearScreen();
+                let game = SnakeGame.new();
+                do game.run();
+            }
+        }
+
+        do Screen.clearScreen();
+        do Output.moveCursor(0,0);
+        do Output.printString("Game Ended..");
+        do Output.moveCursor(4,0);
+        do Output.printString("High Score: ");
+        do Output.printInt(score);
+        
+        do game.dispose();
+        return;
+    }
+}
